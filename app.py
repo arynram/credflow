@@ -250,16 +250,23 @@ if active_role == "🏢 MSME OWNER":
         with st.expander("⚡ AI Acceleration Engine Settings (Groq Cloud • Llama 3.3 Versatile)", expanded=False):
             gk_c1, gk_c2 = st.columns([3, 1])
             with gk_c1:
-                cur_key = st.session_state.get('groq_api_key', '')
+                # Security Fix: Never send the server's API key to the client UI!
+                server_key_exists = bool(os.environ.get("GROQ_API_KEY", "").strip())
+                placeholder_text = "Server API Key Configured (Hidden)" if server_key_exists else "Enter Groq API Key..."
+                
                 entered_key = st.text_input(
                     "Groq API Key (Optional)", 
-                    value=cur_key, 
+                    value="", 
+                    placeholder=placeholder_text,
                     type="password",
                     help="Enter your Groq API key to utilize Llama-3.3 70B for instant transaction standardization and counterparty parsing. Leave blank to use the built-in Local AI Engine."
                 )
-                if entered_key != cur_key:
+                if entered_key:
                     st.session_state['groq_api_key'] = entered_key
                     st.session_state['parsed_statement_result'] = None
+                elif server_key_exists and not st.session_state.get('groq_api_key'):
+                    # Fallback to server key if user didn't enter one and session state is empty
+                    st.session_state['groq_api_key'] = os.environ.get("GROQ_API_KEY", "").strip()
             with gk_c2:
                 if is_groq_available(st.session_state.get('groq_api_key')):
                     st.markdown("<div style='margin-top:26px;'><span class='badge-pill badge-green'>✓ Groq AI Active</span></div>", unsafe_allow_html=True)
